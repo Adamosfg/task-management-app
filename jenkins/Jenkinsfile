@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://github.com/YOUR_USERNAME/task-manager-devops.git'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t yourdockerhub/todo-app:latest ./app'
+            }
+        }
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh 'docker push yourdockerhub/todo-app:latest'
+                }
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f ./k8s/'
+            }
+        }
+    }
+}
